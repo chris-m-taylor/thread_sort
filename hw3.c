@@ -16,6 +16,7 @@ struct Array_attr {
 void* split_insertion_thread(void* arg);
 
 ////////////////////////// single thread
+// This thread function takes in a pointer to an Array_attr
 void* single_insertion_thread(void* arg)
 {
 	
@@ -26,6 +27,7 @@ void* single_insertion_thread(void* arg)
 	double* ary = arg_struct->ary;
 	
 	printf("ary size is: %lld\n", ary_size);
+	
 	
 	//sort array using standard insertion sort algorithm
 	for (int i=1; i<ary_size; i++)
@@ -40,7 +42,8 @@ void* single_insertion_thread(void* arg)
 		}
 		ary[j+1] = key;
 	}
-	printf("Done sorting");
+	
+	printf("Done sorting\n");
 	
 	
 	
@@ -101,9 +104,10 @@ int main(int argc, char** argv)
   {
   	double rand_num = fRand(50.0, 500.0);
   	ary[i] = rand_num;
-  	printf("%f\n", ary[i]);
+  	//printf("%f\n", ary[i]);
   }
 		
+	// DOING THE PROBLEM USING ONE THREAD	
 	//create structs to hold arrays
 	struct Array_attr aryB_attr;
 	aryB_attr.ary = aryB;
@@ -114,6 +118,12 @@ int main(int argc, char** argv)
 	{
 		aryB[i] = ary[i];
 	}
+	
+	// get time before thread
+	struct timespec ts_begin;
+	struct timespec ts_end;
+	clock_gettime(CLOCK_MONOTONIC, &ts_begin);
+	
 
 	//Create thread ids
 	pthread_t tid_single; 	
@@ -130,14 +140,26 @@ int main(int argc, char** argv)
 	// wait for threads to finish
 	pthread_join(tid_single, NULL);
 	
+	// get time after thread
+	clock_gettime(CLOCK_MONOTONIC, &ts_end);
+	
+	double elapsed = ts_end.tv_sec - ts_begin.tv_sec;
+	elapsed += (ts_end.tv_nsec - ts_begin.tv_nsec)/ 1000000000.0;
+	
+	printf("Sorting by ONE thread is done in %lf ms\n", elapsed*1000);
+	
+	
+	////////////// End thread one problem
+	
 	
 	// print out aryB after thread
-	for (int i=0; i<ary_size; i++)
-	{
-		if (i==0){ printf("sorted array is: "); }
-		printf("%f ", aryB[i]);
-		if (i==ary_size-1){ printf("\n"); }
-	}
+	//for (int i=0; i<ary_size; i++)
+	//{
+	//	if (i==0){ printf("sorted array is: "); }
+	//	printf("%f ", aryB[i]);
+	//	if (i==ary_size-1){ printf("\n"); }
+	//}
+	
 	
 	
 	
