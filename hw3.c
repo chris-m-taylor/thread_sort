@@ -15,18 +15,42 @@ struct Array_attr {
 
 void* split_insertion_thread(void* arg);
 
+////////////////////////// single thread
 void* single_insertion_thread(void* arg)
 {
-	// copy entire array into a different array
 	
-	printf("MADE IT TO THE THREEEEAD");
+	struct Array_attr* arg_struct = (struct Array_attr*) arg;	
+	
+	// Get variables out of struct
+	long long ary_size = arg_struct->ary_size;
+	double* ary = arg_struct->ary;
+	
+	printf("ary size is: %lld\n", ary_size);
+	
+	//sort array using standard insertion sort algorithm
+	for (int i=1; i<ary_size; i++)
+	{
+		double key = ary[i];
+		int j = i-1;
+		
+		while (j >= 0 && ary[j] > key)
+		{
+			ary[j+1] = ary[j];
+			j= j-1;
+		}
+		ary[j+1] = key;
+	}
+	printf("Done sorting");
+	
+	
+	
 	pthread_exit(0);
 	return NULL;
 	
 	
 }
 
-
+// Helper Function
 double fRand(double fMin, double fMax)
 {
 	double f = (double)rand() / RAND_MAX;
@@ -34,7 +58,7 @@ double fRand(double fMin, double fMax)
 }
 
 
-
+// MAIN
 int main(int argc, char** argv)
 {
 
@@ -83,9 +107,14 @@ int main(int argc, char** argv)
 	//create structs to hold arrays
 	struct Array_attr aryB_attr;
 	aryB_attr.ary = aryB;
+	aryB_attr.ary_size = ary_size;
 	
+	//Copy main array to arrayB
+	for (int i=0; i<ary_size; i++)
+	{
+		aryB[i] = ary[i];
+	}
 
-		
 	//Create thread ids
 	pthread_t tid_single; 	
 	
@@ -93,9 +122,25 @@ int main(int argc, char** argv)
 	int tid_single_return_status = 
 		pthread_create(&tid_single, NULL, single_insertion_thread, &aryB_attr);
 		
-	printf("Return status is: %d", tid_single_return_status);	
+	if (tid_single_return_status != 0)
+	{ 
+		printf("Problem with creating thread error: %d\n", tid_single_return_status);
+	}
 	
+	// wait for threads to finish
 	pthread_join(tid_single, NULL);
+	
+	
+	// print out aryB after thread
+	for (int i=0; i<ary_size; i++)
+	{
+		if (i==0){ printf("sorted array is: "); }
+		printf("%f ", aryB[i]);
+		if (i==ary_size-1){ printf("\n"); }
+	}
+	
+	
+	
 
 	
   
