@@ -4,6 +4,8 @@
 #include <time.h>
 #include <pthread.h>
 
+#define DEBUG 0
+
 // create stuct 
 struct Array_attr {
 
@@ -12,10 +14,67 @@ struct Array_attr {
 
 };
 
+//create struct for two sorted lists to be merged
+struct mergeSorted_S {
+	long long ary1_size;
+	long long ary2_size;
+	double* ary1;
+	double* ary2;
+	double* aryC;
 
-void* split_insertion_thread(void* arg);
+};
+
+
 
 ////////////////////////// single thread
+
+void* mergeSorted(void* arg)
+{
+	struct mergeSorted_S* arg_struct = arg;
+	
+	long long ary1_size = arg_struct->ary1_size;
+	long long ary2_size = arg_struct->ary2_size;
+	double* ary1 = arg_struct->ary1;
+	double* ary2 = arg_struct->ary2;
+	double* aryC = arg_struct->aryC;
+	
+	// sort both array 1 and 2 into array C
+	int i = 0;
+	int j = 0;
+	int k = 0;
+
+	
+	while (i<ary1_size && j<ary2_size)
+	{
+		//printf("ary1[i] = %lf ", ary1[i]);
+		//printf("ary2[j] = %lf ", ary2[j]);
+		//printf("aryC[k] = %lf ", aryC[k]);
+		if (ary1[i] < ary2[j])
+		{
+			aryC[k++] = ary1[i++];
+		}
+		else
+		{
+			aryC[k++] = ary2[j++];
+		}
+	}
+	
+	while (i<ary1_size)
+	{
+		aryC[k++] = ary1[i++];
+	}
+	
+	while (j<ary2_size)
+	{
+		aryC[k++] = ary2[j++];
+	}
+	
+	pthread_exit(0);
+	
+	return NULL;
+}
+
+
 // This thread function takes in a pointer to an Array_attr
 void* single_insertion_thread(void* arg)
 {
@@ -93,8 +152,8 @@ int main(int argc, char** argv)
   double* ary = (double*)malloc(ary_size * sizeof(double)); //main array
   double* aryB = (double*)malloc(ary_size * sizeof(double)); // one thread array
   double* aryC = (double*)malloc(ary_size * sizeof(double)); // two thread array finished
-  double* AfirstHalf = (double*)malloc(ary_size * sizeof(double)); // two thread array first half
-  double* AsecondHalf = (double*)malloc(ary_size * sizeof(double)); // two thread array second half
+  double* AfirstHalf = (double*)malloc(ary_size/2 * sizeof(double)); // two thread array first half
+  double* AsecondHalf = (double*)malloc(ary_size/2 * sizeof(double)); // two thread array second half
   
   // create random seed
   srand(time(NULL));
@@ -117,16 +176,16 @@ int main(int argc, char** argv)
 	for (int i=0; i<ary_size; i++)
 	{
 		aryB[i] = ary[i];
+		//printf("%lf ", ary[i]);
 	}
+	
+	//Create thread id
+	pthread_t tid_single; 
 	
 	// get time before thread
 	struct timespec ts_begin;
 	struct timespec ts_end;
 	clock_gettime(CLOCK_MONOTONIC, &ts_begin);
-	
-
-	//Create thread ids
-	pthread_t tid_single; 	
 	
 	//create thread function CHECK TO SEE IF IT WORKED BY CHECKING THE ERROR RETURNED
 	int tid_single_return_status = 
@@ -152,6 +211,139 @@ int main(int argc, char** argv)
 	////////////// End thread one problem
 	
 	
+	// Split the array A in half and then send to threads and rejoin at the end
+	
+	
+	// copy first half of A to first array
+	int count_1 = 0;
+	for (int i=0; i<ary_size/2; i++)
+	{
+		
+		AfirstHalf[i] = ary[i];
+		printf("%lf ", AfirstHalf[i]);
+		count_1++;
+	}
+	int count_2 = 0;
+	for (int i=ary_size/2; i<ary_size; i++)
+	{
+		AsecondHalf[i-ary_size/2] = ary[i];
+		printf("%lf ", AsecondHalf[i-ary_size/2]);
+		count_2++;
+	}
+	printf("\n");
+	printf("First size is: %d\n", count_1);
+	printf("Second size is: %d\n", count_2);
+	
+	
+	
+	// create thread id's
+	pthread_t tid_1, tid_2;
+	
+	// create struct's for each thread to be run
+	struct Array_attr firstHalf;
+	struct Array_attr secondHalf;
+	
+	firstHalf.ary_size = count_1;
+	secondHalf.ary_size = count_2;
+	
+	firstHalf.ary = AfirstHalf;
+	secondHalf.ary = AsecondHalf;
+	
+	//get time before sort
+	
+	
+	//create thread function CHECK TO SEE IF IT WORKED BY CHECKING THE ERROR RETURNED
+	int tid_1_return_status = 
+		pthread_create(&tid_1, NULL, single_insertion_thread, &firstHalf);
+		
+	if (tid_1_return_status != 0)
+	{ 
+		printf("Problem with creating thread error: %d\n", tid_1_return_status);
+	}
+	
+	//create thread function CHECK TO SEE IF IT WORKED BY CHECKING THE ERROR RETURNED
+	int tid_2_return_status = 
+		pthread_create(&tid_2, NULL, single_insertion_thread, &secondHalf);
+		
+	if (tid_2_return_status != 0)
+	{ 
+		printf("Problem with creating thread error: %d\n", tid_2_return_status);
+	}
+	
+	pthread_join(tid_1, NULL);
+	pthread_join(tid_2, NULL);
+	
+	printf("first half:\n");
+	for (int i=0; i<count_1; i++)
+	{
+		printf("%lf ", AfirstHalf[i]);
+	}
+	printf("\n\n");
+	
+	printf("second half:\n");
+	for (int i=0; i<count_2; i++)
+	{
+		printf("%lf ", AsecondHalf[i]);
+	}
+	printf("\n\n");
+	
+	// create struct to pass into mergeSorted thread
+	struct mergeSorted_S merge;
+	
+	//assign values to struct
+	
+	merge.ary1 = AfirstHalf;
+	merge.ary2 = AsecondHalf;
+	merge.aryC = aryC;
+	merge.ary1_size = count_1;
+	merge.ary2_size = count_2;
+	
+	//create thread id
+	pthread_t merge_id;
+	
+	// call thread to merge arrays in struct
+	int merge_return_status = 
+		pthread_create(&merge_id, NULL, mergeSorted, &merge);
+		
+	if (merge_return_status != 0)
+	{ 
+		printf("Problem with creating thread error: %d\n", merge_return_status);
+	}
+	
+	// wait for thread
+	pthread_join(merge_id, NULL);
+	
+	printf("Array sorted using two threads and then merged:\n");
+	for (int i = 0; i<ary_size; i++)
+	{
+		printf("%lf ", aryC[i]);
+	}
+	printf("\n\n");
+	
+	/*
+	
+	
+	
+	*/
+	
+	//get time after sort
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	// print out aryB after thread
 	//for (int i=0; i<ary_size; i++)
 	//{
@@ -161,12 +353,6 @@ int main(int argc, char** argv)
 	//}
 	
 	
-	
-	
-
-	
-  
-  
 
 	// free up resources
 	free(ary);
