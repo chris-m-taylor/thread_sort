@@ -46,9 +46,10 @@ void* mergeSorted(void* arg)
 	
 	while (i<ary1_size && j<ary2_size)
 	{
-		//printf("ary1[i] = %lf ", ary1[i]);
-		//printf("ary2[j] = %lf ", ary2[j]);
-		//printf("aryC[k] = %lf ", aryC[k]);
+
+		// standard merging two sorted list algorithm
+		
+		// if the item in one list is less than the other, add it to the third array
 		if (ary1[i] < ary2[j])
 		{
 			aryC[k++] = ary1[i++];
@@ -59,6 +60,7 @@ void* mergeSorted(void* arg)
 		}
 	}
 	
+	// after one list is completly empty, add whichever list remains to the third array
 	while (i<ary1_size)
 	{
 		aryC[k++] = ary1[i++];
@@ -85,7 +87,7 @@ void* single_insertion_thread(void* arg)
 	long long ary_size = arg_struct->ary_size;
 	double* ary = arg_struct->ary;
 	
-	printf("ary size is: %lld\n", ary_size);
+	//printf("ary size is: %lld\n", ary_size);
 	
 	
 	//sort array using standard insertion sort algorithm
@@ -101,10 +103,6 @@ void* single_insertion_thread(void* arg)
 		}
 		ary[j+1] = key;
 	}
-	
-	printf("Done sorting\n");
-	
-	
 	
 	pthread_exit(0);
 	return NULL;
@@ -179,6 +177,15 @@ int main(int argc, char** argv)
 		//printf("%lf ", ary[i]);
 	}
 	
+#if DEBUG == 1
+	printf("aryB before sort:\n");
+	for (int i=0; i<ary_size; i++)
+	{
+		printf("%lf ", aryB[i]);
+	}
+	printf("\n\n");
+#endif
+	
 	//Create thread id
 	pthread_t tid_single; 
 	
@@ -205,7 +212,7 @@ int main(int argc, char** argv)
 	double elapsed = ts_end.tv_sec - ts_begin.tv_sec;
 	elapsed += (ts_end.tv_nsec - ts_begin.tv_nsec)/ 1000000000.0;
 	
-	printf("Sorting by ONE thread is done in %lf ms\n", elapsed*1000);
+	printf("Sorting is done in %lf ms when one thread is used\n", elapsed*1000);
 	
 	
 	////////////// End thread one problem
@@ -217,24 +224,33 @@ int main(int argc, char** argv)
 	// copy first half of A to first array
 	int count_1 = 0;
 	for (int i=0; i<ary_size/2; i++)
-	{
-		
+	{	
 		AfirstHalf[i] = ary[i];
-		printf("%lf ", AfirstHalf[i]);
 		count_1++;
 	}
+	
 	int count_2 = 0;
 	for (int i=ary_size/2; i<ary_size; i++)
 	{
 		AsecondHalf[i-ary_size/2] = ary[i];
-		printf("%lf ", AsecondHalf[i-ary_size/2]);
 		count_2++;
 	}
-	printf("\n");
-	printf("First size is: %d\n", count_1);
-	printf("Second size is: %d\n", count_2);
 	
+#if DEBUG == 1	
+	printf("[%d]First half before sorting is:\n", count_1);
+	for (int i=0; i<count_1; i++)
+	{
+		printf("%lf ", AfirstHalf[i]);
+	}
+	printf("\n\n");
 	
+	printf("[%d]second half before sorting is:\n", count_2);
+	for (int i=0; i<count_1; i++)
+	{
+		printf("%lf ", AsecondHalf[i]);
+	}
+	printf("\n\n");
+#endif
 	
 	// create thread id's
 	pthread_t tid_1, tid_2;
@@ -248,9 +264,10 @@ int main(int argc, char** argv)
 	
 	firstHalf.ary = AfirstHalf;
 	secondHalf.ary = AsecondHalf;
+	//////////////////////////////////////// TWO THREADS
 	
 	//get time before sort
-	
+	clock_gettime(CLOCK_MONOTONIC, &ts_begin);
 	
 	//create thread function CHECK TO SEE IF IT WORKED BY CHECKING THE ERROR RETURNED
 	int tid_1_return_status = 
@@ -273,20 +290,24 @@ int main(int argc, char** argv)
 	pthread_join(tid_1, NULL);
 	pthread_join(tid_2, NULL);
 	
-	printf("first half:\n");
+#if DEBUG == 1	
+	
+	printf("\n[%d]First half after sorting is:\n", count_1);
 	for (int i=0; i<count_1; i++)
 	{
 		printf("%lf ", AfirstHalf[i]);
 	}
 	printf("\n\n");
 	
-	printf("second half:\n");
+	printf("[%d]Second half after sorting is:\n", count_2);
 	for (int i=0; i<count_2; i++)
 	{
 		printf("%lf ", AsecondHalf[i]);
 	}
 	printf("\n\n");
-	
+#endif
+
+
 	// create struct to pass into mergeSorted thread
 	struct mergeSorted_S merge;
 	
@@ -313,45 +334,22 @@ int main(int argc, char** argv)
 	// wait for thread
 	pthread_join(merge_id, NULL);
 	
+#if DEBUG == 1	
 	printf("Array sorted using two threads and then merged:\n");
 	for (int i = 0; i<ary_size; i++)
 	{
 		printf("%lf ", aryC[i]);
 	}
 	printf("\n\n");
-	
-	/*
-	
-	
-	
-	*/
+#endif
 	
 	//get time after sort
+	clock_gettime(CLOCK_MONOTONIC, &ts_end);
 	
+	elapsed = ts_end.tv_sec - ts_begin.tv_sec;
+	elapsed += (ts_end.tv_nsec - ts_begin.tv_nsec)/ 1000000000.0;
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	// print out aryB after thread
-	//for (int i=0; i<ary_size; i++)
-	//{
-	//	if (i==0){ printf("sorted array is: "); }
-	//	printf("%f ", aryB[i]);
-	//	if (i==ary_size-1){ printf("\n"); }
-	//}
-	
+	printf("Sorting is done in %lf ms when two threads are used\n", elapsed*1000);
 	
 
 	// free up resources
