@@ -3,6 +3,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h> //for checking file
+#include <string.h> // for string concatenation
 
 #define DEBUG 0
 
@@ -122,6 +124,8 @@ double fRand(double fMin, double fMax)
 int main(int argc, char** argv)
 {
 
+	
+
   //check for one command line argument
   if (argc != 2) 
   { 
@@ -141,8 +145,11 @@ int main(int argc, char** argv)
     }
   }
   
+  
+  
   // change str into int
   long long ary_size = atoll(argv[1]);
+
   
   ///////////////////////////////////////////// After checks are complete
  
@@ -178,7 +185,9 @@ int main(int argc, char** argv)
 	}
 	
 #if DEBUG == 1
-	printf("aryB before sort:\n");
+	printf("Your input size is: %lld\n\n", ary_size);
+
+	printf("[%lld]aryB before sort:\n", ary_size);
 	for (int i=0; i<ary_size; i++)
 	{
 		printf("%lf ", aryB[i]);
@@ -209,10 +218,21 @@ int main(int argc, char** argv)
 	// get time after thread
 	clock_gettime(CLOCK_MONOTONIC, &ts_end);
 	
-	double elapsed = ts_end.tv_sec - ts_begin.tv_sec;
-	elapsed += (ts_end.tv_nsec - ts_begin.tv_nsec)/ 1000000000.0;
+	double elapsed1 = ts_end.tv_sec - ts_begin.tv_sec;
+	elapsed1 += (ts_end.tv_nsec - ts_begin.tv_nsec)/ 1000000000.0;
+
+#if DEBUG == 1
+	printf("[%lld]aryB after sort:\n", ary_size);
+	for (int i=0; i<ary_size; i++)
+	{
+		printf("%lf ", aryB[i]);
+	}
+	printf("\n\n");
+#endif
+
+	printf("Sorting is done in %lf ms when one thread is used\n\n", elapsed1*1000);
 	
-	printf("Sorting is done in %lf ms when one thread is used\n", elapsed*1000);
+
 	
 	
 	////////////// End thread one problem
@@ -245,7 +265,7 @@ int main(int argc, char** argv)
 	printf("\n\n");
 	
 	printf("[%d]second half before sorting is:\n", count_2);
-	for (int i=0; i<count_1; i++)
+	for (int i=0; i<count_2; i++)
 	{
 		printf("%lf ", AsecondHalf[i]);
 	}
@@ -292,7 +312,7 @@ int main(int argc, char** argv)
 	
 #if DEBUG == 1	
 	
-	printf("\n[%d]First half after sorting is:\n", count_1);
+	printf("[%d]First half after sorting is:\n", count_1);
 	for (int i=0; i<count_1; i++)
 	{
 		printf("%lf ", AfirstHalf[i]);
@@ -346,10 +366,32 @@ int main(int argc, char** argv)
 	//get time after sort
 	clock_gettime(CLOCK_MONOTONIC, &ts_end);
 	
-	elapsed = ts_end.tv_sec - ts_begin.tv_sec;
-	elapsed += (ts_end.tv_nsec - ts_begin.tv_nsec)/ 1000000000.0;
+	double elapsed2 = ts_end.tv_sec - ts_begin.tv_sec;
+	elapsed2 += (ts_end.tv_nsec - ts_begin.tv_nsec)/ 1000000000.0;
 	
-	printf("Sorting is done in %lf ms when two threads are used\n", elapsed*1000);
+	printf("Sorting is done in %lf ms when two threads are used\n", elapsed2*1000);
+	
+	
+	//create file to append to if one isnt created, if it is, append to the already created file
+  FILE* fp;
+  
+  if( access( "./REPORT.txt", F_OK ) != -1 ) {
+  	//if file exists
+    fp = fopen("./REPORT.txt", "a");
+    
+	} else {
+    // file doesn't exist
+    // create file
+    fp = fopen("./REPORT.txt", "a");
+    
+    //format first line to say what the lines mean
+    fprintf(fp, "Format of file is [input size]: (time taken for one thread) ms, (time taken for two threads) ms\n");
+}
+  
+  //write lines of file
+  fprintf(fp, "[%lld]: %lfms, %lfms\n", ary_size, elapsed1*1000, elapsed2*1000);
+	
+	
 	
 
 	// free up resources

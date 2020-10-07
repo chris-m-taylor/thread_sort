@@ -1,0 +1,3 @@
+Format of file is [input size]: (time taken for one thread) ms, (time taken for two threads) ms
+[5000]: 26.226639ms, 18.834752ms
+[50000]: 1948.964373ms, 994.477784ms
